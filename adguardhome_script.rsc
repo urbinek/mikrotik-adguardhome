@@ -35,7 +35,9 @@
 #   2. Set up firewall/NAT rules as needed
 #   3. Access AdGuard Home web UI (default: http://<container-ip>:3000)
 #   4. Complete initial AdGuard Home setup wizard
-#
+#   5. IF port was changed (per default wizard), update healthcheck to monitor new port
+#      /container/set adguardhome healthcheck-cmd="wget -q --spider http://localhost:80 || exit 1"
+
 # Usage:
 #   /import adguardhome_script.rsc
 #   or
@@ -56,13 +58,14 @@
 :local cMountDst "/opt/adguardhome/conf"
 :local cEnvListName "AGH"
 :local cRegistryUrl "https://registry-1.docker.io"
+:local cCheckCertificate "no"
 :local cRequiredMinorVersion "22"
 :local cScriptVersion "1.6.1"
 
 ## Timeout configuration (adjust for slow USB/large images)
 :local cPullTimeout 300
-:local cStartDelay 10
-:local cVerifyDelay 10
+:local cStartDelay 60
+:local cVerifyDelay 60
 
 ## DNS backup for restoration
 :local dnsBackup ""
@@ -450,8 +453,10 @@
         interface=$cInterface logging=yes mountlists=$cMountListName start-on-boot=yes \
         root-dir=$cRootDir workdir="/opt/adguardhome/work" \
         cmd="-c /opt/adguardhome/conf/AdGuardHome.yaml -h 0.0.0.0 -w /opt/adguardhome/work" \
+        healthcheck-cmd="wget -q --spider http://localhost:3000 || exit 1" \
         entrypoint=/opt/adguardhome/AdGuardHome \
-        envlist=$cEnvListName
+        envlist=$cEnvListName \
+        check-certificate=$cCheckCertificate
 
     ## Wait for extraction with percentage progress
     :local extractTimeout $cPullTimeout
